@@ -1,9 +1,27 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useRouter } from "next/navigation";
+
 import App from "../app/page";
 
+jest.mock("next/navigation", () => ({
+  useRouter: jest.fn(),
+}));
+
+// ✅ Mock the layout so it doesn't return <html> and <body>
+jest.mock("../app/layout", () => ({
+  __esModule: true,
+  default: ({ children }) => <>{children}</>,
+}));
+
 describe("Start Page", () => {
+  const pushMock = jest.fn();
+
   beforeEach(() => {
+    // Reset mock before each test
+    pushMock.mockReset();
+    useRouter.mockReturnValue({ push: pushMock });
+    // Render the App component
     render(<App />);
   });
 
@@ -25,11 +43,12 @@ describe("Start Page", () => {
     ).toBeInTheDocument();
   });
 
-  test("navigates to game page on start button click", async () => {
+  test("navigates to subject select screen on start button click", async () => {
     const button = screen.getByRole("button", { name: /Start Game/i });
     await userEvent.click(button);
-    // Replace this with an assertion that confirms you're on the game page
-    expect(screen.getByText(/Game Page/i)).toBeInTheDocument();
+
+    // Check that router.push was called with the correct path
+    expect(pushMock).toHaveBeenCalledWith("/subject");
   });
 });
 
