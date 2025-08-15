@@ -1,9 +1,17 @@
 import "@testing-library/jest-dom";
+import React from "react";
+import fetchMock from "jest-fetch-mock";
 
-jest.mock("./app/layout", () => {
-  console.log("RootLayout mock applied!");
-  return {
-    __esModule: true,
-    default: ({ children }) => <>{children}</>,
-  };
+// Enable fetch mocks
+fetchMock.enableMocks();
+
+// Mock RootLayout
+jest.mock("./app/layout", () => ({
+  __esModule: true,
+  default: ({ children }) => <>{children}</>,
+}));
+
+// Reset mocks after each test
+beforeEach(() => {
+  fetchMock.resetMocks();
 });

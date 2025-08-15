@@ -21,12 +21,17 @@
     "@testing-library/jest-dom": "^6.6.4",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
+    "@whatwg-node/fetch": "^0.10.10",
     "babel-jest": "^30.0.5",
+    "cross-fetch": "^4.1.0",
     "eslint": "^9",
     "eslint-config-next": "15.4.6",
     "identity-obj-proxy": "^3.0.0",
     "jest": "^30.0.5",
     "jest-environment-jsdom": "^30.0.5",
-    "msw": "^2.10.4"
+    "jest-fetch-mock": "^3.0.3",
+    "msw": "^2.10.4",
+    "node-fetch": "^2.7.0",
+    "whatwg-fetch": "^3.6.20"
   }
 }

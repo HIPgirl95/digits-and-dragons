@@ -6,6 +6,12 @@ export const metadata = {
 export default function RootLayout({ children }) {
   const isTest = process.env.NODE_ENV === "test";
 
+  // Only start MSW in development (browser) mode, not in tests
+  if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
+    // Lazy start MSW worker for dev environment
+    import("../mocks/browser").then(({ worker }) => worker.start());
+  }
+
   if (isTest) {
     // In tests, just render children without <html> / <body>
     return <>{children}</>;
