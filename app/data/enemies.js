@@ -1,6 +1,6 @@
 export const enemies = [
   {
-    id: 1,
+    id: 1001,
     name: "Dragon",
     maxHp: 100,
     hp: 100,
@@ -10,7 +10,7 @@ export const enemies = [
     ],
   },
   {
-    id: 2,
+    id: 1002,
     name: "Lich",
     maxHp: 80,
     hp: 80,

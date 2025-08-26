@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "../../components/layout";
 import { classes } from "../data/classes";
@@ -12,48 +12,48 @@ export default function Game() {
 
   // Initialize players and enemy
   const [players, setPlayers] = useState(
-    classes.slice(0, 2).map((p) => ({ ...p, hp: p.maxHp }))
+    classes.map((p) => ({ ...p, hp: p.maxHp }))
   );
   const [enemy, setEnemy] = useState({ ...enemies[0], hp: enemies[0].maxHp });
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
   const [log, setLog] = useState([]);
+  const [lineup, setLineup] = useState([]);
 
   const allPlayersDead = players.every((p) => p.hp <= 0);
   const enemyDead = enemy.hp <= 0;
 
-  // Memoize participants array to keep it stable
-  const participants = useMemo(() => {
-    return [
-      ...players.map((p) => ({ ...p, type: "player" })),
-      { ...enemy, type: "enemy" },
-    ];
-  }, [players, enemy]);
+  function shuffleArray(array) {
+    return [...array].sort(() => Math.random() - 0.5);
+  }
 
   // Advance to next alive participant
   const nextTurn = useCallback(() => {
-    let nextIndex = (currentTurnIndex + 1) % participants.length;
+    if (lineup.length === 0) return;
 
-    while (participants[nextIndex].hp <= 0) {
-      nextIndex = (nextIndex + 1) % participants.length;
+    let nextIndex = (currentTurnIndex + 1) % lineup.length;
+
+    // Skip over dead participants automatically
+    while (lineup[nextIndex]?.hp <= 0) {
+      nextIndex = (nextIndex + 1) % lineup.length;
     }
 
     setCurrentTurnIndex(nextIndex);
-  }, [currentTurnIndex, participants]);
+  }, [currentTurnIndex, lineup]);
 
   // Enemy turn effect
   useEffect(() => {
     if (enemyDead || allPlayersDead) return;
+    if (lineup.length === 0) return;
 
-    const current = participants[currentTurnIndex];
+    const current = lineup[currentTurnIndex];
+    if (!current) return;
+
     if (current.hp <= 0) {
-      // Skip dead participants automatically
-      const nextIndex = (currentTurnIndex + 1) % participants.length;
-      setCurrentTurnIndex(nextIndex);
+      nextTurn(); // ⬅️ centralize skipping dead
       return;
     }
 
     if (current.type === "enemy") {
-      // Enemy automatically attacks
       const move = enemy.moves[Math.floor(Math.random() * enemy.moves.length)];
 
       const alivePlayers = players.filter((p) => p.hp > 0);
@@ -73,17 +73,17 @@ export default function Game() {
           ]);
           return newPlayers;
         });
-        setCurrentTurnIndex((prev) => (prev + 1) % participants.length);
+        nextTurn(); // ⬅️ single source of turn advancement
       }, 1000);
     }
-    // Players’ turns are triggered by button click, which also advances the turn
   }, [
     currentTurnIndex,
-    participants,
     players,
     enemy,
     enemyDead,
     allPlayersDead,
+    lineup,
+    nextTurn,
   ]);
 
   // Player move handler
@@ -101,7 +101,7 @@ export default function Game() {
       `${players[playerIndex].name} used ${move.name}!`,
     ]);
 
-    nextTurn();
+    nextTurn(); // ⬅️ consistent advancement
   };
 
   // Health bar component
@@ -130,47 +130,69 @@ export default function Game() {
     );
   };
 
+  useEffect(() => {
+    if (lineup.length === 0) {
+      setLineup(
+        shuffleArray([
+          ...players.map((p) => ({ ...p, type: "player" })),
+          { ...enemy, type: "enemy" },
+        ])
+      );
+    }
+  }, [players, enemy, lineup]);
+
   return (
     <Layout>
       <h1>Dragons</h1>
-      <button onClick={() => router.push("/")}>Start Over</button>
-
-      <div style={{ marginTop: "20px" }}>
-        <h2>
-          Enemy: {enemy.name} - HP: {enemy.hp}/{enemy.maxHp}
-        </h2>
-        <HealthBar current={enemy.hp} max={enemy.maxHp} />
-        {participants[currentTurnIndex]?.type === "enemy" && !enemyDead && (
-          <p style={{ fontWeight: "bold" }}>Enemy&#39;s Turn!</p>
-        )}
-      </div>
+      <button onClick={() => router.push("/")}>Back to Home</button>
+      <button onClick={() => window.location.reload()}>Start Over</button>
 
       <div>
-        {players.map((player, index) => (
-          <div key={player.id} style={{ marginBottom: "20px" }}>
-            <h3>
-              {player.name} - HP: {player.hp}/{player.maxHp}
-            </h3>
-            <HealthBar current={player.hp} max={player.maxHp} />
-            {participants[currentTurnIndex]?.type === "player" &&
-              participants[currentTurnIndex]?.id === player.id &&
-              player.hp > 0 &&
-              !enemyDead && (
+        {lineup.map((participantRef, idx) => {
+          // Get the actual participant object from state
+          const participant =
+            participantRef.type === "player"
+              ? players.find((p) => p.id === participantRef.id)
+              : enemy;
+
+          if (!participant) return null;
+
+          const isCurrent = currentTurnIndex === idx;
+          const isEnemy = participantRef.type === "enemy";
+
+          return (
+            <div key={participant.id} style={{ marginBottom: "20px" }}>
+              <h3>
+                {participant.name} - HP: {participant.hp}/{participant.maxHp}
+              </h3>
+              <HealthBar current={participant.hp} max={participant.maxHp} />
+
+              {isCurrent && !enemyDead && !allPlayersDead && (
                 <div>
-                  <p style={{ fontWeight: "bold" }}>Your Turn!</p>
-                  {player.moves.map((move) => (
-                    <button
-                      key={move.id}
-                      style={{ marginRight: "5px", marginBottom: "5px" }}
-                      onClick={() => handlePlayerMove(move, index)}
-                    >
-                      {move.name}
-                    </button>
-                  ))}
+                  <p style={{ fontWeight: "bold" }}>
+                    {isEnemy ? "Enemy's Turn!" : "Your Turn!"}
+                  </p>
+
+                  {!isEnemy &&
+                    participant.moves.map((move) => (
+                      <button
+                        key={move.id}
+                        style={{ marginRight: "5px", marginBottom: "5px" }}
+                        onClick={() =>
+                          handlePlayerMove(
+                            move,
+                            players.findIndex((p) => p.id === participant.id)
+                          )
+                        }
+                      >
+                        {move.name}
+                      </button>
+                    ))}
                 </div>
               )}
-          </div>
-        ))}
+            </div>
+          );
+        })}
       </div>
 
       <div>
