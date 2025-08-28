@@ -21,26 +21,30 @@ function rollDice(diceStr) {
 function applyMove(move, source, target) {
   if (!target) {
     console.warn(`applyMove called with undefined target`);
-    return;
+    return 0; // return 0 if no target
   }
 
+  let amount = 0;
+
   if (move.type === "damage") {
-    const damage = rollDice(move.damage);
-    target.hp -= damage;
+    amount = rollDice(move.damage);
+    target.hp -= amount;
     if (target.hp < 0) target.hp = 0;
     console.log(
-      `${source.name} uses ${move.name} on ${target.name} for ${damage} damage!`
+      `${source.name} uses ${move.name} on ${target.name} for ${amount} damage!`
     );
   } else if (move.type === "heal") {
-    const healAmount = rollDice(move.heal);
-    target.hp += healAmount;
+    amount = rollDice(move.heal);
+    target.hp += amount;
     if (target.hp > target.maxHp) target.hp = target.maxHp; // prevent overheal
     console.log(
-      `${source.name} uses ${move.name} on ${target.name}, healing ${healAmount} HP!`
+      `${source.name} uses ${move.name} on ${target.name}, healing ${amount} HP!`
     );
   } else {
     console.warn(`${move.name} has an unknown type.`);
   }
+
+  return amount; // ✅ return the actual amount applied
 }
 
 export { rollDice, applyMove };
