@@ -26,6 +26,7 @@ export default function Game() {
 
   const allPlayersDead = players.every((p) => p.hp <= 0);
   const enemyDead = enemy.hp <= 0;
+  const gameOver = allPlayersDead || enemyDead;
 
   function shuffleArray(array) {
     if (!Array.isArray(array)) return [];
@@ -75,7 +76,9 @@ export default function Game() {
 
   // Enemy turn
   useEffect(() => {
-    if (enemyDead || allPlayersDead) return;
+    if (gameOver) return;
+
+    const currentParticipant = lineup[currentTurnIndex];
     if (!currentParticipant || currentParticipant.type !== "enemy") return;
 
     const move = enemy.moves[Math.floor(Math.random() * enemy.moves.length)];
@@ -86,7 +89,7 @@ export default function Game() {
       alivePlayers[Math.floor(Math.random() * alivePlayers.length)];
     const targetIndex = players.findIndex((p) => p.id === target.id);
 
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       setPlayers((prev) => {
         const newPlayers = [...prev];
         const damage = applyMove(move, enemy, newPlayers[targetIndex]);
@@ -97,11 +100,13 @@ export default function Game() {
       });
       nextTurn();
     }, 1000);
-  }, [currentParticipant, enemy, players, enemyDead, allPlayersDead, nextTurn]);
+
+    return () => clearTimeout(timer);
+  }, [currentTurnIndex, lineup, enemy, players, gameOver, nextTurn]);
 
   // Player move handler
   const handlePlayerMove = (move, playerIndex) => {
-    if (enemyDead) return;
+    if (gameOver) return;
 
     setEnemy((prev) => {
       const newEnemy = { ...prev };
@@ -118,6 +123,7 @@ export default function Game() {
 
   // Answer handler
   const handleAnswer = (option, participant) => {
+    if (gameOver) return;
     if (option.isCorrect) {
       setLog([`${participant.name} answered correctly!`]);
       setFeedback("Correct!");
@@ -136,31 +142,6 @@ export default function Game() {
     }
   };
 
-  const HealthBar = ({ current, max }) => {
-    const percentage = Math.max(0, (current / max) * 100);
-    return (
-      <div
-        style={{
-          background: "#444",
-          width: "150px",
-          height: "15px",
-          borderRadius: "5px",
-          overflow: "hidden",
-          marginBottom: "5px",
-        }}
-      >
-        <div
-          style={{
-            width: `${percentage}%`,
-            height: "100%",
-            background: "#0f0",
-            transition: "width 0.3s ease",
-          }}
-        />
-      </div>
-    );
-  };
-
   return (
     <Layout>
       <h1>Dragons</h1>
@@ -172,9 +153,15 @@ export default function Game() {
           <div className={styles.dragonBox}>DRAGON</div>
           <div className={styles.questionArea}>
             <div className={styles.questionBox}>
-              {!showMoves
-                ? currentQuestion?.question || "Loading question..."
-                : "Select a move!"}
+              <h1>
+                {enemyDead
+                  ? "Victory! The enemy has been defeated!"
+                  : allPlayersDead
+                  ? "Defeat! All players have fallen."
+                  : !showMoves
+                  ? currentQuestion?.question || "Loading question..."
+                  : "Select a move!"}
+              </h1>
             </div>
             <div className={styles.answersGrid}>
               {participant && participant.type !== "enemy" && (
@@ -209,41 +196,71 @@ export default function Game() {
           </div>
         </div>
 
-        <div className={styles.combatLog}>
-          <h2>Combat Log:</h2>
-          {log[0] && <p>{log[0]}</p>}
-        </div>
+        <div className={styles.combatLog}>{log[0] && <h1>{log[0]}</h1>}</div>
 
-        <div className="lineup">
-          {lineup.map((participantRef, idx) => {
+        <div className={styles.lineupCarousel}>
+          {Array.from({ length: 5 }).map((_, idx) => {
+            if (lineup.length === 0) return null; // prevent errors when lineup not ready
+
+            const lineupIndex = (currentTurnIndex + idx) % lineup.length; // loop around
+            const participantRef = lineup[lineupIndex];
+
+            if (!participantRef) return null; // safety check
+
             const participant =
               participantRef.type === "player"
                 ? players.find((p) => p.id === participantRef.id)
                 : enemy;
-            if (!participant) return null;
-            const isCurrent = currentTurnIndex === idx;
-            const isEnemy = participantRef.type === "enemy";
+
+            if (!participant) return null; // safety check
+
+            const isCurrent = idx === 0; // first card is always current
+
             return (
-              <div key={participant.id} style={{ marginBottom: "20px" }}>
-                <h3>
-                  {participant.name} - HP: {participant.hp}/{participant.maxHp}
-                </h3>
-                <HealthBar current={participant.hp} max={participant.maxHp} />
-                {isCurrent && !enemyDead && !allPlayersDead && (
-                  <div>
-                    <p style={{ fontWeight: "bold" }}>
-                      {isEnemy ? "Enemy's Turn!" : "Your Turn!"}
-                    </p>
-                  </div>
+              <div
+                key={participant.id}
+                className={`${styles.participantCard} ${
+                  isCurrent ? styles.currentParticipant : ""
+                }`}
+              >
+                <h4>{participant.name}</h4>
+                <p>
+                  {participant.hp}/{participant.maxHp}
+                </p>
+                <div
+                  style={{
+                    width: "100%",
+                    height: "12px",
+                    background: "#444",
+                    borderRadius: "5px",
+                    overflow: "hidden",
+                    marginTop: "5px",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${Math.max(
+                        0,
+                        (participant.hp / participant.maxHp) * 100
+                      )}%`,
+                      height: "100%",
+                      background: "#0f0",
+                      transition: "width 0.3s ease",
+                    }}
+                  />
+                </div>
+                {isCurrent && (
+                  <p style={{ fontWeight: "bold", marginTop: "5px" }}>
+                    {participantRef.type === "enemy"
+                      ? "Enemy's Turn!"
+                      : "Your Turn!"}
+                  </p>
                 )}
               </div>
             );
           })}
         </div>
       </div>
-
-      {enemyDead && <h2>Victory! The enemy has been defeated!</h2>}
-      {allPlayersDead && <h2>Defeat! All players have fallen.</h2>}
     </Layout>
   );
 }
