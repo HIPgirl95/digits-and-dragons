@@ -204,20 +204,41 @@ export default function Game() {
           <div className={styles.dragonBox}>DRAGON</div>
           <div className={styles.questionArea}>
             <div className={styles.questionBox}>
-              {currentQuestion?.question || "Loading question..."}
+              {!showMoves
+                ? currentQuestion?.question || "Loading question..."
+                : "Select a move!"}
             </div>
             <div className={styles.answersGrid}>
-              {participant &&
-                currentQuestion &&
-                shuffleArray(currentQuestion.options).map((opt, i) => (
-                  <button
-                    key={i}
-                    className={styles.answerButton} // style to match the grid boxes
-                    onClick={() => handleAnswer(opt, participant)}
-                  >
-                    {opt.text} {/* show the actual answer text */}
-                  </button>
-                ))}
+              {participant && participant.type !== "enemy" && (
+                <>
+                  {showMoves
+                    ? // If the player answered correctly, show move buttons
+                      participant.moves.map((move) => (
+                        <button
+                          key={move.id}
+                          className={styles.answerButton}
+                          onClick={() =>
+                            handlePlayerMove(
+                              move,
+                              players.findIndex((p) => p.id === participant.id)
+                            )
+                          }
+                        >
+                          {move.name}
+                        </button>
+                      ))
+                    : // Otherwise, show quiz answer buttons
+                      currentQuestion?.options?.map((opt, i) => (
+                        <button
+                          key={i}
+                          className={styles.answerButton}
+                          onClick={() => handleAnswer(opt, participant)}
+                        >
+                          {opt.text}
+                        </button>
+                      ))}
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -255,28 +276,6 @@ export default function Game() {
                     <p style={{ fontWeight: "bold" }}>
                       {isEnemy ? "Enemy's Turn!" : "Your Turn!"}
                     </p>
-
-                    {/* If answered correctly, show moves */}
-                    {!isEnemy && showMoves && (
-                      <div>
-                        {participant.moves.map((move) => (
-                          <button
-                            key={move.id}
-                            style={{ marginRight: "5px", marginBottom: "5px" }}
-                            onClick={() =>
-                              handlePlayerMove(
-                                move,
-                                players.findIndex(
-                                  (p) => p.id === participant.id
-                                )
-                              )
-                            }
-                          >
-                            {move.name}
-                          </button>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
