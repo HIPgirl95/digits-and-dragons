@@ -1,0 +1,102 @@
+.gameContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+}
+
+.topRow {
+  display: flex;
+  gap: 10px;
+}
+
+.dragonBox {
+  flex: 1;
+  height: 200px;
+  border: 2px solid black;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.questionArea {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.questionBox {
+  height: 80px;
+  border: 2px solid black;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.answersGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-gap: 10px;
+}
+
+.answerButton {
+  padding: 10px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  border-radius: 10px;
+  border: 2px solid black;
+  background-color: #fff;
+}
+
+.combatLog {
+  height: 80px;
+  border: 2px solid black;
+  padding: 5px;
+  overflow-y: auto;
+}
+
+.lineup {
+  display: flex;
+  gap: 10px;
+}
+
+.lineup > div {
+  flex: 1;
+  height: 60px;
+  border: 2px solid black;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+}
+
+.lineupCarousel {
+  display: flex;
+  justify-content: center; /* center the 5 cards */
+  gap: 10px;
+  overflow-x: auto;
+  padding: 10px;
+  width: 100%;
+}
+
+.participantCard {
+  flex: 0 0 150px; /* fixed width for each card */
+  border: 1px solid #888;
+  border-radius: 10px;
+  padding: 10px;
+  background-color: #222;
+  color: white;
+  text-align: center;
+  transition: transform 0.3s;
+}
+
+.currentParticipant {
+  border: 2px solid #0f0;
+  background-color: #333;
+  transform: scale(1.1); /* make current participant slightly larger */
+}

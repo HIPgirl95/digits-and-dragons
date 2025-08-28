@@ -7,6 +7,7 @@ import { classes } from "../data/classes";
 import { enemies } from "../data/enemies";
 import { additionQuestions } from "../data/math/addition"; // ✅ import your quiz data
 import { applyMove } from "../utils/combat";
+import styles from "./game.module.css";
 
 export default function Game() {
   const router = useRouter();
@@ -183,87 +184,105 @@ export default function Game() {
     }
   }, [currentTurnIndex, lineup]);
 
+  const currentParticipant = lineup[currentTurnIndex];
+
+  const participant =
+    currentParticipant?.type === "player"
+      ? players.find((p) => p.id === currentParticipant.id)
+      : currentParticipant?.type === "enemy"
+      ? enemy
+      : null; // fallback if lineup[currentTurnIndex] is undefined
+
   return (
     <Layout>
       <h1>Dragons</h1>
       <button onClick={() => router.push("/")}>Back to Home</button>
       <button onClick={() => window.location.reload()}>Start Over</button>
 
-      <div>
-        {lineup.map((participantRef, idx) => {
-          const participant =
-            participantRef.type === "player"
-              ? players.find((p) => p.id === participantRef.id)
-              : enemy;
-
-          if (!participant) return null;
-
-          const isCurrent = currentTurnIndex === idx;
-          const isEnemy = participantRef.type === "enemy";
-
-          return (
-            <div key={participant.id} style={{ marginBottom: "20px" }}>
-              <h3>
-                {participant.name} - HP: {participant.hp}/{participant.maxHp}
-              </h3>
-              <HealthBar current={participant.hp} max={participant.maxHp} />
-
-              {isCurrent && !enemyDead && !allPlayersDead && (
-                <div>
-                  <p style={{ fontWeight: "bold" }}>
-                    {isEnemy ? "Enemy's Turn!" : "Your Turn!"}
-                  </p>
-
-                  {/* Player Turn: Show Question First */}
-                  {!isEnemy && currentQuestion && !showMoves && (
-                    <div>
-                      <p>{currentQuestion.question}</p>
-                      {shuffleArray(currentQuestion.options).map((opt, i) => (
-                        <button
-                          key={i}
-                          style={{ marginRight: "5px", marginBottom: "5px" }}
-                          onClick={() => handleAnswer(opt, participant)}
-                        >
-                          {opt.text}
-                        </button>
-                      ))}
-                      {feedback && <p style={{ color: "red" }}>{feedback}</p>}
-                    </div>
-                  )}
-
-                  {/* If answered correctly, show moves */}
-                  {!isEnemy && showMoves && (
-                    <div>
-                      {participant.moves.map((move) => (
-                        <button
-                          key={move.id}
-                          style={{ marginRight: "5px", marginBottom: "5px" }}
-                          onClick={() =>
-                            handlePlayerMove(
-                              move,
-                              players.findIndex((p) => p.id === participant.id)
-                            )
-                          }
-                        >
-                          {move.name}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
+      <div className={styles.gameContainer}>
+        <div className={styles.topRow}>
+          <div className={styles.dragonBox}>DRAGON</div>
+          <div className={styles.questionArea}>
+            <div className={styles.questionBox}>
+              {currentQuestion?.question || "Loading question..."}
             </div>
-          );
-        })}
-      </div>
+            <div className={styles.answersGrid}>
+              {participant &&
+                currentQuestion &&
+                shuffleArray(currentQuestion.options).map((opt, i) => (
+                  <button
+                    key={i}
+                    className={styles.answerButton} // style to match the grid boxes
+                    onClick={() => handleAnswer(opt, participant)}
+                  >
+                    {opt.text} {/* show the actual answer text */}
+                  </button>
+                ))}
+            </div>
+          </div>
+        </div>
 
-      <div>
-        <h2>Combat Log:</h2>
-        <ul>
-          {log.map((entry, i) => (
-            <li key={i}>{entry}</li>
-          ))}
-        </ul>
+        <div className={styles.combatLog}>
+          <h2>Combat Log:</h2>
+          <ul>
+            {log.map((entry, i) => (
+              <li key={i}>{entry}</li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="lineup">
+          {lineup.map((participantRef, idx) => {
+            const participant =
+              participantRef.type === "player"
+                ? players.find((p) => p.id === participantRef.id)
+                : enemy;
+
+            if (!participant) return null;
+
+            const isCurrent = currentTurnIndex === idx;
+            const isEnemy = participantRef.type === "enemy";
+
+            return (
+              <div key={participant.id} style={{ marginBottom: "20px" }}>
+                <h3>
+                  {participant.name} - HP: {participant.hp}/{participant.maxHp}
+                </h3>
+                <HealthBar current={participant.hp} max={participant.maxHp} />
+
+                {isCurrent && !enemyDead && !allPlayersDead && (
+                  <div>
+                    <p style={{ fontWeight: "bold" }}>
+                      {isEnemy ? "Enemy's Turn!" : "Your Turn!"}
+                    </p>
+
+                    {/* If answered correctly, show moves */}
+                    {!isEnemy && showMoves && (
+                      <div>
+                        {participant.moves.map((move) => (
+                          <button
+                            key={move.id}
+                            style={{ marginRight: "5px", marginBottom: "5px" }}
+                            onClick={() =>
+                              handlePlayerMove(
+                                move,
+                                players.findIndex(
+                                  (p) => p.id === participant.id
+                                )
+                              )
+                            }
+                          >
+                            {move.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {enemyDead && <h2>Victory! The enemy has been defeated!</h2>}
