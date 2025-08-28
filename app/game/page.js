@@ -113,14 +113,18 @@ export default function Game() {
     nextTurn();
   };
 
-  //Answer handler
-  const handleAnswer = (answer, correct, participant) => {
-    if (answer === correct) {
+  // Answer handler
+  const handleAnswer = (option, participant) => {
+    if (option.isCorrect) {
       setLog((prev) => [...prev, `${participant.name} answered correctly!`]);
       setFeedback("");
       setShowMoves(true);
     } else {
-      setFeedback(`Wrong! The correct answer was: ${correct}`);
+      setFeedback(
+        `Wrong! The correct answer was: ${
+          currentQuestion.options.find((o) => o.isCorrect)?.text
+        }`
+      );
       setLog((prev) => [...prev, `${participant.name} answered wrong!`]);
 
       setTimeout(() => {
@@ -214,19 +218,13 @@ export default function Game() {
                   {!isEnemy && currentQuestion && !showMoves && (
                     <div>
                       <p>{currentQuestion.question}</p>
-                      {shuffleArray(currentQuestion.answers).map((ans) => (
+                      {shuffleArray(currentQuestion.options).map((opt, i) => (
                         <button
-                          key={ans}
+                          key={i}
                           style={{ marginRight: "5px", marginBottom: "5px" }}
-                          onClick={() =>
-                            handleAnswer(
-                              ans,
-                              currentQuestion.correct,
-                              participant
-                            )
-                          }
+                          onClick={() => handleAnswer(opt, participant)}
                         >
-                          {ans}
+                          {opt.text}
                         </button>
                       ))}
                       {feedback && <p style={{ color: "red" }}>{feedback}</p>}
