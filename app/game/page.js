@@ -1,27 +1,33 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import Layout from "../../components/layout";
 import { classes } from "../data/classes";
 import { enemies } from "../data/enemies";
 import { additionQuestions } from "../data/math/addition";
 import { subtractionQuestions } from "../data/math/subtraction";
+import { multiplicationQuestions } from "../data/math/multiplication"; // add more as needed
 import { applyMove } from "../utils/combat";
 import styles from "./game.module.css";
-import { useMemo } from "react";
+import { useGame } from "../context/gameContext";
 
 export default function Game() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const subject = searchParams.get("subject") || "Addition"; // fallback
+  const { subjects } = useGame(); // read selected subjects from context
 
-  // Pick the right question set
+  // Combine question banks from all selected subjects
   const questionBank = useMemo(() => {
-    if (subject === "Addition") return additionQuestions;
-    if (subject === "Subtraction") return subtractionQuestions;
-    return [];
-  }, [subject]);
+    let combined = [];
+    subjects.forEach((subject) => {
+      if (subject === "Addition") combined = combined.concat(additionQuestions);
+      if (subject === "Subtraction")
+        combined = combined.concat(subtractionQuestions);
+      if (subject === "Multiplication")
+        combined = combined.concat(multiplicationQuestions);
+    });
+    return combined;
+  }, [subjects]);
 
   const [players, setPlayers] = useState(
     classes.map((p) => ({ ...p, hp: p.maxHp }))
@@ -65,7 +71,7 @@ export default function Game() {
     }
   }, [players, enemy, lineup]);
 
-  // Load a new question when it's a player's turn
+  // Load a new question on player's turn
   useEffect(() => {
     const current = lineup[currentTurnIndex];
     if (current && current.type === "player" && questionBank.length > 0) {
@@ -87,8 +93,6 @@ export default function Game() {
   // Enemy turn
   useEffect(() => {
     if (gameOver) return;
-
-    const currentParticipant = lineup[currentTurnIndex];
     if (!currentParticipant || currentParticipant.type !== "enemy") return;
 
     const move = enemy.moves[Math.floor(Math.random() * enemy.moves.length)];
@@ -112,12 +116,11 @@ export default function Game() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [currentTurnIndex, lineup, enemy, players, gameOver, nextTurn]);
+  }, [currentParticipant, enemy, players, gameOver, nextTurn]);
 
   // Player move handler
   const handlePlayerMove = (move, playerIndex) => {
     if (gameOver) return;
-
     setEnemy((prev) => {
       const newEnemy = { ...prev };
       const damage = applyMove(move, players[playerIndex], newEnemy);
@@ -126,7 +129,6 @@ export default function Game() {
       ]);
       return newEnemy;
     });
-
     setShowMoves(false);
     nextTurn();
   };
@@ -155,7 +157,7 @@ export default function Game() {
   return (
     <Layout>
       <h1>Dragons</h1>
-      <p>Subject: {subject}</p>
+      <p>Subjects: {subjects.join(", ")}</p>
       <button onClick={() => router.push("/")}>Back to Home</button>
       <button onClick={() => window.location.reload()}>Start Over</button>
 

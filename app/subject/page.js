@@ -1,38 +1,42 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "../../components/layout";
+import { useGame } from "../context/gameContext";
 
 export default function SubjectSelection({
-  subjects = ["Addition", "Subtraction"],
+  subjects = ["Addition", "Subtraction", "Multiplication"],
 }) {
-  const [selected, setSelected] = useState("");
   const router = useRouter();
+  const { subjects: selectedSubjects, setSubjects } = useGame();
+
+  const toggleSubject = (subject) => {
+    if (selectedSubjects.includes(subject)) {
+      setSubjects(selectedSubjects.filter((s) => s !== subject));
+    } else {
+      setSubjects([...selectedSubjects, subject]);
+    }
+  };
 
   return (
     <Layout>
-      <h1 className="text-2xl font-bold mb-4">Select a Subject</h1>
-      <div className="space-y-2">
-        {subjects.map((subject) => (
-          <label key={subject} className="block">
-            <input
-              type="radio"
-              name="subject"
-              value={subject}
-              onChange={() => setSelected(subject)}
-              checked={selected === subject}
-              className="mr-2"
-            />
-            {subject}
-          </label>
-        ))}
-      </div>
+      <h1>Select Subjects</h1>
+      {subjects.map((s) => (
+        <label key={s}>
+          <input
+            type="checkbox"
+            name="subject"
+            value={s}
+            checked={selectedSubjects.includes(s)}
+            onChange={() => toggleSubject(s)}
+          />
+          {s}
+        </label>
+      ))}
 
       <button
-        className="mt-4 px-4 py-2 bg-blue-500 text-white rounded disabled:bg-gray-400"
-        disabled={!selected}
-        onClick={() => router.push(`/players?subject=${selected}`)}
+        disabled={selectedSubjects.length === 0}
+        onClick={() => router.push("/players")}
       >
         Next
       </button>
