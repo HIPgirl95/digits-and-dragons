@@ -12,20 +12,28 @@ export default function SubjectSelection({
 
   return (
     <Layout>
-      <h1>Select a Subject</h1>
-      {subjects.map((subject) => (
-        <label key={subject}>
-          <input
-            type="radio"
-            name="subject"
-            value={subject}
-            onChange={() => setSelected(subject)}
-          />
-          {subject}
-        </label>
-      ))}
+      <h1 className="text-2xl font-bold mb-4">Select a Subject</h1>
+      <div className="space-y-2">
+        {subjects.map((subject) => (
+          <label key={subject} className="block">
+            <input
+              type="radio"
+              name="subject"
+              value={subject}
+              onChange={() => setSelected(subject)}
+              checked={selected === subject}
+              className="mr-2"
+            />
+            {subject}
+          </label>
+        ))}
+      </div>
 
-      <button disabled={!selected} onClick={() => router.push("/players")}>
+      <button
+        className="mt-4 px-4 py-2 bg-blue-500 text-white rounded disabled:bg-gray-400"
+        disabled={!selected}
+        onClick={() => router.push(`/players?subject=${selected}`)}
+      >
         Next
       </button>
     </Layout>

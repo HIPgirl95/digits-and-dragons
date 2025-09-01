@@ -1,16 +1,27 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Layout from "../../components/layout";
 import { classes } from "../data/classes";
 import { enemies } from "../data/enemies";
 import { additionQuestions } from "../data/math/addition";
+import { subtractionQuestions } from "../data/math/subtraction";
 import { applyMove } from "../utils/combat";
 import styles from "./game.module.css";
+import { useMemo } from "react";
 
 export default function Game() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const subject = searchParams.get("subject") || "Addition"; // fallback
+
+  // Pick the right question set
+  const questionBank = useMemo(() => {
+    if (subject === "Addition") return additionQuestions;
+    if (subject === "Subtraction") return subtractionQuestions;
+    return [];
+  }, [subject]);
 
   const [players, setPlayers] = useState(
     classes.map((p) => ({ ...p, hp: p.maxHp }))
@@ -57,14 +68,13 @@ export default function Game() {
   // Load a new question when it's a player's turn
   useEffect(() => {
     const current = lineup[currentTurnIndex];
-    if (current && current.type === "player") {
-      const q =
-        additionQuestions[Math.floor(Math.random() * additionQuestions.length)];
+    if (current && current.type === "player" && questionBank.length > 0) {
+      const q = questionBank[Math.floor(Math.random() * questionBank.length)];
       const shuffledOptions = shuffleArray(q.options);
       setCurrentQuestion({ ...q, options: shuffledOptions });
       setShowMoves(false);
     }
-  }, [currentTurnIndex, lineup]);
+  }, [currentTurnIndex, lineup, questionBank]);
 
   const currentParticipant = lineup[currentTurnIndex];
   const participant =
@@ -145,6 +155,7 @@ export default function Game() {
   return (
     <Layout>
       <h1>Dragons</h1>
+      <p>Subject: {subject}</p>
       <button onClick={() => router.push("/")}>Back to Home</button>
       <button onClick={() => window.location.reload()}>Start Over</button>
 
@@ -164,7 +175,7 @@ export default function Game() {
               </h1>
             </div>
             <div className={styles.answersGrid}>
-              {participant && participant.type !== "enemy" && (
+              {participant && participant.type !== "enemy" && !gameOver && (
                 <>
                   {showMoves
                     ? participant.moves.map((move) => (
@@ -200,21 +211,21 @@ export default function Game() {
 
         <div className={styles.lineupCarousel}>
           {Array.from({ length: 5 }).map((_, idx) => {
-            if (lineup.length === 0) return null; // prevent errors when lineup not ready
+            if (lineup.length === 0) return null;
 
-            const lineupIndex = (currentTurnIndex + idx) % lineup.length; // loop around
+            const lineupIndex = (currentTurnIndex + idx) % lineup.length;
             const participantRef = lineup[lineupIndex];
 
-            if (!participantRef) return null; // safety check
+            if (!participantRef) return null;
 
             const participant =
               participantRef.type === "player"
                 ? players.find((p) => p.id === participantRef.id)
                 : enemy;
 
-            if (!participant) return null; // safety check
+            if (!participant) return null;
 
-            const isCurrent = idx === 0; // first card is always current
+            const isCurrent = idx === 0;
 
             return (
               <div
@@ -249,7 +260,7 @@ export default function Game() {
                     }}
                   />
                 </div>
-                {isCurrent && (
+                {isCurrent && !gameOver && (
                   <p style={{ fontWeight: "bold", marginTop: "5px" }}>
                     {participantRef.type === "enemy"
                       ? "Enemy's Turn!"
