@@ -6,11 +6,16 @@ const GameContext = createContext();
 
 export function GameProvider({ children }) {
   const [subjects, setSubjects] = useState([]); // initialize as empty array
-  const [players, setPlayers] = useState([]);
+  const [players, setPlayers] = useState([]); // [{ name: "", class: { name: "", image: "" } }]
 
   return (
     <GameContext.Provider
-      value={{ subjects, setSubjects, players, setPlayers }}
+      value={{
+        subjects,
+        setSubjects,
+        players,
+        setPlayers,
+      }}
     >
       {children}
     </GameContext.Provider>

@@ -3,20 +3,20 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "../../components/layout";
-import { classes } from "../data/classes";
 import { enemies } from "../data/enemies";
 import { additionQuestions } from "../data/math/addition";
 import { subtractionQuestions } from "../data/math/subtraction";
-import { multiplicationQuestions } from "../data/math/multiplication"; // add more as needed
+import { multiplicationQuestions } from "../data/math/multiplication";
 import { applyMove } from "../utils/combat";
 import styles from "./game.module.css";
 import { useGame } from "../context/gameContext";
+import Image from "next/image";
 
 export default function Game() {
   const router = useRouter();
-  const { subjects } = useGame(); // read selected subjects from context
+  const { subjects, players: contextPlayers } = useGame(); // use players from context
 
-  // Combine question banks from all selected subjects
+  // Combine question banks
   const questionBank = useMemo(() => {
     let combined = [];
     subjects.forEach((subject) => {
@@ -29,14 +29,22 @@ export default function Game() {
     return combined;
   }, [subjects]);
 
+  // Initialize players with hp + id
   const [players, setPlayers] = useState(
-    classes.map((p) => ({ ...p, hp: p.maxHp }))
+    contextPlayers.map((p, i) => ({
+      id: i + 1,
+      name: p.name,
+      class: p.class,
+      moves: p.class.moves || [], // fallback if moves are stored in class data
+      hp: p.class.maxHp || 100, // fallback if class has maxHp
+      maxHp: p.class.maxHp || 100,
+    }))
   );
+
   const [enemy, setEnemy] = useState({ ...enemies[0], hp: enemies[0].maxHp });
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
   const [log, setLog] = useState([]);
   const [lineup, setLineup] = useState([]);
-
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [showMoves, setShowMoves] = useState(false);
   const [feedback, setFeedback] = useState("");
@@ -212,12 +220,11 @@ export default function Game() {
         <div className={styles.combatLog}>{log[0] && <h1>{log[0]}</h1>}</div>
 
         <div className={styles.lineupCarousel}>
-          {Array.from({ length: 5 }).map((_, idx) => {
+          {Array.from({ length: Math.min(lineup.length, 5) }).map((_, idx) => {
             if (lineup.length === 0) return null;
 
             const lineupIndex = (currentTurnIndex + idx) % lineup.length;
             const participantRef = lineup[lineupIndex];
-
             if (!participantRef) return null;
 
             const participant =
@@ -231,12 +238,23 @@ export default function Game() {
 
             return (
               <div
-                key={participant.id}
+                key={`${participantRef.type}-${participant.id}`}
                 className={`${styles.participantCard} ${
                   isCurrent ? styles.currentParticipant : ""
                 }`}
               >
+                {/* Show class image if available */}
+                {participant.class?.image && (
+                  <Image
+                    src={participant.class.image}
+                    alt={participant.class.name}
+                    width={50}
+                    height={50}
+                    style={{ borderRadius: "50%" }}
+                  />
+                )}
                 <h4>{participant.name}</h4>
+                <p className={styles.className}>{participant.class?.name}</p>
                 <p>
                   {participant.hp}/{participant.maxHp}
                 </p>

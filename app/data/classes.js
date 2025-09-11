@@ -2,6 +2,7 @@ export const classes = [
   {
     id: 1,
     name: "Wizard",
+    image: "/images/wizard.png",
     description:
       "Masters of arcane magic, using spells to control the battlefield.",
     maxHp: 70,
@@ -39,6 +40,7 @@ export const classes = [
   {
     id: 2,
     name: "Fighter",
+    image: "/images/fighter.png",
     description: "Skilled warriors, strong and durable in melee combat.",
     maxHp: 95,
     moves: [
@@ -75,6 +77,7 @@ export const classes = [
   {
     id: 3,
     name: "Cleric",
+    image: "/images/cleric.png",
     description:
       "Healers and divine protectors, supporting allies and smiting foes.",
     maxHp: 90,
@@ -112,6 +115,7 @@ export const classes = [
   {
     id: 4,
     name: "Druid",
+    image: "/images/druid.png",
     description: "Masters of nature, versatile in magic and shape-shifting.",
     maxHp: 80,
     moves: [
@@ -148,6 +152,7 @@ export const classes = [
   {
     id: 5,
     name: "Ranger",
+    image: "/images/ranger.png",
     description: "Versatile hunters and trackers, skilled in ranged combat.",
     maxHp: 85,
     moves: [
@@ -184,6 +189,7 @@ export const classes = [
   {
     id: 6,
     name: "Paladin",
+    image: "/images/paladin.png",
     description: "Holy warriors, blending combat and divine support.",
     maxHp: 95,
     moves: [
@@ -220,6 +226,7 @@ export const classes = [
   {
     id: 7,
     name: "Rogue",
+    image: "/images/rogue.png",
     description:
       "Stealthy and cunning, experts at sneaking and surprise attacks.",
     maxHp: 75,
@@ -257,6 +264,7 @@ export const classes = [
   {
     id: 8,
     name: "Bard",
+    image: "/images/bard.png",
     description:
       "Charismatic supporters, boosting allies and controlling the battlefield.",
     maxHp: 80,
@@ -294,6 +302,7 @@ export const classes = [
   {
     id: 9,
     name: "Barbarian",
+    image: "/images/barbarian.png",
     description:
       "Brutal melee fighters, relying on raw strength and durability.",
     maxHp: 100,
