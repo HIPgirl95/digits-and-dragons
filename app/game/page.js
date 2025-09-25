@@ -167,7 +167,7 @@ export default function Game() {
       <h1>Dragons</h1>
       <p>Subjects: {subjects.join(", ")}</p>
       <button onClick={() => router.push("/")}>Back to Home</button>
-      <button onClick={() => window.location.reload()}>Start Over</button>
+      {/* <button onClick={() => window.location.reload()}>Start Over</button> */}
 
       <div className={styles.gameContainer}>
         <div className={styles.topRow}>

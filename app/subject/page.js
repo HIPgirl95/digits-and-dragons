@@ -21,6 +21,9 @@ export default function SubjectSelection({
   return (
     <Layout>
       <h1>Select Subjects</h1>
+      <h3>
+        If you select more than one subject, then they will be shuffled together
+      </h3>
       {subjects.map((s) => (
         <label key={s}>
           <input
