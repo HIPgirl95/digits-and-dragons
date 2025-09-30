@@ -5,7 +5,7 @@ import Layout from "../../components/layout";
 import { useGame } from "../context/gameContext";
 
 export default function SubjectSelection({
-  subjects = ["Addition", "Subtraction", "Multiplication"],
+  subjects = ["Addition", "Subtraction", "Multiplication", "Division"],
 }) {
   const router = useRouter();
   const { subjects: selectedSubjects, setSubjects } = useGame();

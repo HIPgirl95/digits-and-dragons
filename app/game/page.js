@@ -7,6 +7,7 @@ import { enemies } from "../data/enemies";
 import { additionQuestions } from "../data/math/addition";
 import { subtractionQuestions } from "../data/math/subtraction";
 import { multiplicationQuestions } from "../data/math/multiplication";
+import { divisionQuestions } from "../data/math/division";
 import { applyMove } from "../utils/combat";
 import styles from "./game.module.css";
 import { useGame } from "../context/gameContext";
@@ -25,6 +26,7 @@ export default function Game() {
         combined = combined.concat(subtractionQuestions);
       if (subject === "Multiplication")
         combined = combined.concat(multiplicationQuestions);
+      if (subject === "Division") combined = combined.concat(divisionQuestions);
     });
     return combined;
   }, [subjects]);
