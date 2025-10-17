@@ -6,11 +6,14 @@ const GameContext = createContext();
 
 export function GameProvider({ children }) {
   const [subjects, setSubjects] = useState([]); // initialize as empty array
+  const [subtopics, setSubtopics] = useState([]); // initialize as empty array
   const [players, setPlayers] = useState([]); // [{ name: "", class: { name: "", image: "" } }]
 
   return (
     <GameContext.Provider
       value={{
+        subtopics,
+        setSubtopics,
         subjects,
         setSubjects,
         players,

@@ -1,13 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Layout from "../../components/layout";
 import { enemies } from "../data/enemies";
-import { additionQuestions } from "../data/math/addition";
-import { subtractionQuestions } from "../data/math/subtraction";
-import { multiplicationQuestions } from "../data/math/multiplication";
-import { divisionQuestions } from "../data/math/division";
 import { applyMove } from "../utils/combat";
 import styles from "./game.module.css";
 import { useGame } from "../context/gameContext";
@@ -15,92 +11,110 @@ import Image from "next/image";
 
 export default function Game() {
   const router = useRouter();
-  const { subjects, players: contextPlayers } = useGame(); // use players from context
+  const {
+    subjects,
+    subtopics: selectedSubtopics,
+    players: contextPlayers,
+  } = useGame();
 
-  // Combine question banks
-  const questionBank = useMemo(() => {
-    let combined = [];
-    subjects.forEach((subject) => {
-      if (subject === "Addition") combined = combined.concat(additionQuestions);
-      if (subject === "Subtraction")
-        combined = combined.concat(subtractionQuestions);
-      if (subject === "Multiplication")
-        combined = combined.concat(multiplicationQuestions);
-      if (subject === "Division") combined = combined.concat(divisionQuestions);
-    });
-    return combined;
-  }, [subjects]);
-
-  // Initialize players with hp + id
-  const [players, setPlayers] = useState(
-    contextPlayers.map((p, i) => ({
-      id: i + 1,
-      name: p.name,
-      class: p.class,
-      moves: p.class.moves || [], // fallback if moves are stored in class data
-      hp: p.class.maxHp || 100, // fallback if class has maxHp
-      maxHp: p.class.maxHp || 100,
-    }))
-  );
-
+  const [questionBank, setQuestionBank] = useState([]);
+  const [players, setPlayers] = useState([]);
   const [enemy, setEnemy] = useState({ ...enemies[0], hp: enemies[0].maxHp });
-  const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
-  const [log, setLog] = useState([]);
   const [lineup, setLineup] = useState([]);
+  const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [showMoves, setShowMoves] = useState(false);
+  const [log, setLog] = useState([]);
   const [feedback, setFeedback] = useState("");
 
   const allPlayersDead = players.every((p) => p.hp <= 0);
   const enemyDead = enemy.hp <= 0;
   const gameOver = allPlayersDead || enemyDead;
 
-  function shuffleArray(array) {
-    if (!Array.isArray(array)) return [];
-    return [...array].sort(() => Math.random() - 0.5);
-  }
+  // Shuffle utility
+  const shuffleArray = (arr) =>
+    Array.isArray(arr) ? [...arr].sort(() => Math.random() - 0.5) : [];
 
+  // --- 1. Fetch questions ---
+  useEffect(() => {
+    if (!selectedSubtopics?.length) return;
+
+    const fetchQuestions = async () => {
+      try {
+        const res = await fetch("/api/questions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            // Make sure this is an array of IDs
+            subtopicIds: selectedSubtopics,
+          }),
+        });
+        const data = await res.json();
+        console.log("Fetched questions:", data);
+        setQuestionBank(data || []);
+      } catch (err) {
+        console.error("Failed to fetch questions:", err);
+      }
+    };
+
+    fetchQuestions();
+  }, [selectedSubtopics]);
+
+  // --- 2. Initialize players ---
+  useEffect(() => {
+    if (!contextPlayers?.length) return;
+
+    const initializedPlayers = contextPlayers.map((p, i) => ({
+      id: i + 1,
+      name: p.name,
+      class: p.class,
+      moves: p.class?.moves || [],
+      hp: p.class?.maxHp || 100,
+      maxHp: p.class?.maxHp || 100,
+      type: "player",
+    }));
+
+    setPlayers(initializedPlayers);
+  }, [contextPlayers]);
+
+  // --- 3. Initialize lineup ---
+  useEffect(() => {
+    if (!players.length || !enemy) return;
+    if (lineup.length) return;
+
+    setLineup(shuffleArray([...players, { ...enemy, type: "enemy" }]));
+  }, [players, enemy, lineup]);
+
+  const currentParticipant = lineup[currentTurnIndex];
+
+  // --- 4. Load question on player's turn ---
+  useEffect(() => {
+    if (currentParticipant?.type !== "player") return;
+    if (!questionBank.length) return;
+
+    const q = questionBank[Math.floor(Math.random() * questionBank.length)];
+    const shuffledOptions = shuffleArray(q.options || []);
+    setCurrentQuestion({ ...q, options: shuffledOptions });
+    setShowMoves(false);
+    setFeedback("");
+  }, [currentTurnIndex, currentParticipant, questionBank]);
+
+  // --- 5. Advance turn ---
   const nextTurn = useCallback(() => {
-    if (lineup.length === 0) return;
+    if (!lineup.length) return;
+
     let nextIndex = (currentTurnIndex + 1) % lineup.length;
-    while (lineup[nextIndex]?.hp <= 0) {
+    let attempts = 0;
+
+    while (lineup[nextIndex]?.hp <= 0 && attempts < lineup.length) {
       nextIndex = (nextIndex + 1) % lineup.length;
+      attempts++;
     }
+
     setCurrentTurnIndex(nextIndex);
   }, [currentTurnIndex, lineup]);
 
-  // Setup lineup
-  useEffect(() => {
-    if (lineup.length === 0) {
-      setLineup(
-        shuffleArray([
-          ...players.map((p) => ({ ...p, type: "player" })),
-          { ...enemy, type: "enemy" },
-        ])
-      );
-    }
-  }, [players, enemy, lineup]);
-
-  // Load a new question on player's turn
-  useEffect(() => {
-    const current = lineup[currentTurnIndex];
-    if (current && current.type === "player" && questionBank.length > 0) {
-      const q = questionBank[Math.floor(Math.random() * questionBank.length)];
-      const shuffledOptions = shuffleArray(q.options);
-      setCurrentQuestion({ ...q, options: shuffledOptions });
-      setShowMoves(false);
-    }
-  }, [currentTurnIndex, lineup, questionBank]);
-
-  const currentParticipant = lineup[currentTurnIndex];
-  const participant =
-    currentParticipant?.type === "player"
-      ? players.find((p) => p.id === currentParticipant.id)
-      : currentParticipant?.type === "enemy"
-      ? enemy
-      : null;
-
-  // Enemy turn
+  // --- 6. Enemy turn ---
   useEffect(() => {
     if (gameOver) return;
     if (!currentParticipant || currentParticipant.type !== "enemy") return;
@@ -128,9 +142,10 @@ export default function Game() {
     return () => clearTimeout(timer);
   }, [currentParticipant, enemy, players, gameOver, nextTurn]);
 
-  // Player move handler
+  // --- 7. Player move after correct answer ---
   const handlePlayerMove = (move, playerIndex) => {
     if (gameOver) return;
+
     setEnemy((prev) => {
       const newEnemy = { ...prev };
       const damage = applyMove(move, players[playerIndex], newEnemy);
@@ -139,24 +154,22 @@ export default function Game() {
       ]);
       return newEnemy;
     });
+
     setShowMoves(false);
     nextTurn();
   };
 
-  // Answer handler
+  // --- 8. Player answers question ---
   const handleAnswer = (option, participant) => {
-    if (gameOver) return;
+    if (gameOver || !option) return;
+
     if (option.isCorrect) {
       setLog([`${participant.name} answered correctly!`]);
-      setFeedback("Correct!");
       setShowMoves(true);
     } else {
+      const correct = currentQuestion?.options?.find((o) => o.isCorrect)?.text;
       setLog([`${participant.name} answered wrong!`]);
-      setFeedback(
-        `Wrong! The correct answer was: ${
-          currentQuestion.options.find((o) => o.isCorrect)?.text
-        }`
-      );
+      setFeedback(`Wrong! Correct answer: ${correct}`);
       setTimeout(() => {
         setFeedback("");
         nextTurn();
@@ -164,16 +177,24 @@ export default function Game() {
     }
   };
 
+  const participant =
+    currentParticipant?.type === "player"
+      ? players.find((p) => p.id === currentParticipant.id)
+      : currentParticipant?.type === "enemy"
+      ? enemy
+      : null;
+  console.log("selectedSubtopics:", selectedSubtopics);
+
   return (
     <Layout>
       <h1>Dragons</h1>
       <p>Subjects: {subjects.join(", ")}</p>
       <button onClick={() => router.push("/")}>Back to Home</button>
-      {/* <button onClick={() => window.location.reload()}>Start Over</button> */}
 
       <div className={styles.gameContainer}>
         <div className={styles.topRow}>
           <div className={styles.dragonBox}>DRAGON</div>
+
           <div className={styles.questionArea}>
             <div className={styles.questionBox}>
               <h1>
@@ -181,13 +202,15 @@ export default function Game() {
                   ? "Victory! The enemy has been defeated!"
                   : allPlayersDead
                   ? "Defeat! All players have fallen."
-                  : !showMoves
+                  : participant?.type === "player" && !showMoves
                   ? currentQuestion?.question || "Loading question..."
                   : "Select a move!"}
               </h1>
+              {feedback && <p>{feedback}</p>}
             </div>
+
             <div className={styles.answersGrid}>
-              {participant && participant.type !== "enemy" && !gameOver && (
+              {participant?.type === "player" && !gameOver && (
                 <>
                   {showMoves
                     ? participant.moves.map((move) => (
@@ -223,42 +246,41 @@ export default function Game() {
 
         <div className={styles.lineupCarousel}>
           {Array.from({ length: Math.min(lineup.length, 5) }).map((_, idx) => {
-            if (lineup.length === 0) return null;
+            if (!lineup.length) return null;
 
             const lineupIndex = (currentTurnIndex + idx) % lineup.length;
             const participantRef = lineup[lineupIndex];
             if (!participantRef) return null;
 
-            const participant =
+            const p =
               participantRef.type === "player"
-                ? players.find((p) => p.id === participantRef.id)
+                ? players.find((pl) => pl.id === participantRef.id)
                 : enemy;
 
-            if (!participant) return null;
+            if (!p) return null;
 
             const isCurrent = idx === 0;
 
             return (
               <div
-                key={`${participantRef.type}-${participant.id}`}
+                key={`${participantRef.type}-${p.id}`}
                 className={`${styles.participantCard} ${
                   isCurrent ? styles.currentParticipant : ""
                 }`}
               >
-                {/* Show class image if available */}
-                {participant.class?.image && (
+                {p.class?.image && (
                   <Image
-                    src={participant.class.image}
-                    alt={participant.class.name}
+                    src={p.class.image}
+                    alt={p.class.name}
                     width={50}
                     height={50}
                     style={{ borderRadius: "50%" }}
                   />
                 )}
-                <h4>{participant.name}</h4>
-                <p className={styles.className}>{participant.class?.name}</p>
+                <h4>{p.name}</h4>
+                <p className={styles.className}>{p.class?.name}</p>
                 <p>
-                  {participant.hp}/{participant.maxHp}
+                  {p.hp}/{p.maxHp}
                 </p>
                 <div
                   style={{
@@ -272,10 +294,7 @@ export default function Game() {
                 >
                   <div
                     style={{
-                      width: `${Math.max(
-                        0,
-                        (participant.hp / participant.maxHp) * 100
-                      )}%`,
+                      width: `${Math.max(0, (p.hp / p.maxHp) * 100)}%`,
                       height: "100%",
                       background: "#0f0",
                       transition: "width 0.3s ease",
