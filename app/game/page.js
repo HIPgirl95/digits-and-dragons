@@ -168,8 +168,10 @@ export default function Game() {
       setShowMoves(true);
     } else {
       const correct = currentQuestion?.options?.find((o) => o.isCorrect)?.text;
-      setLog([`${participant.name} answered wrong!`]);
-      setFeedback(`Wrong! Correct answer: ${correct}`);
+      setLog([
+        `${participant.name} answered wrong! The correct answer was ${correct}`,
+      ]);
+
       setTimeout(() => {
         setFeedback("");
         nextTurn();
